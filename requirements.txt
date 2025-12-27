@@ -1,0 +1,19 @@
+# Core Python stack
+numpy>=1.21
+pandas>=1.4
+scipy>=1.8
+
+# File handling & utilities
+joblib>=1.2
+
+# Machine Learning - scikit-learn
+scikit-learn>=1.2
+
+# Gradient Boosting
+xgboost>=1.7
+
+# Deep Learning (Keras / TensorFlow)
+tensorflow>=2.12
+
+# Visualization
+matplotlib>=3.6
