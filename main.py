@@ -14,7 +14,7 @@ from model_training import train_select_models
 
 import joblib
 
-def unsupervised_hit_bounce_detection(json_file_title, T_bounce=35, window=3):
+def unsupervised_hit_bounce_detection(json_file_title, T_bounce=35, window=10):
     """
     Assign pred_action = hit / bounce / air
     using multi-point backward and forward deltas.
