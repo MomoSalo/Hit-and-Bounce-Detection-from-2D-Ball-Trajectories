@@ -126,10 +126,9 @@ best_mlp_features = joblib.load("models/best_mlp_features.pkl")
 
 def supervized_hit_bounce_detection(json_path):
     """
-    - Sélectionne le meilleur modèle (RF / XGB / MLP)
-    - selon la performance HIT & BOUNCE uniquement
+    - Applique le modèle final (stacking)
     - enrichit le JSON avec pred_action
-    - retourne (best_model_name, best_model, best_params)
+    - retourne le JSON enrichi
     """
 
     # =========================
@@ -144,72 +143,22 @@ def supervized_hit_bounce_detection(json_path):
 
     df_all = out
     df_vis = df_all[df_all["visible"]].copy()
-
-
     df_vis = df_vis.fillna(0)
 
     X = df_vis[FEATURES].values
-    y_true = df_vis["action"].map(LABEL_MAP).values
 
     # =========================
-    # 2. Liste des modèles candidats
-    # =========================
-    
-    candidates = {
-        "RandomForest": best_rf,
-        "XGBoost": best_xgb,
-        "MLP": best_mlp,
-        "Stacking": stack
-    }
-
-    scores = {}
-    predictions = {}
-
-    # =========================
-    # 3. Évaluer chaque modèle (HIT / BOUNCE ONLY)
+    # 2. Prédiction avec le modèle final (STACK)
     # =========================
 
-    X_full = X.copy()
-    X_input = X_full
-
-    for name, model in candidates.items():
-
-        y_pred = model.predict(X_input)
-
-
-
-        report = classification_report(
-            y_true,
-            y_pred,
-            labels=[LABEL_MAP["hit"], LABEL_MAP["bounce"]],
-            output_dict=True,
-            zero_division=0
-        )
-
-        f1_hit = report[str(LABEL_MAP["hit"])]["f1-score"]
-        f1_bounce = report[str(LABEL_MAP["bounce"])]["f1-score"]
-
-        scores[name] = 0.5 * (f1_hit + f1_bounce)
-        predictions[name] = y_pred
+    y_pred = stack.predict(X)
 
     # =========================
-    # 4. Sélection du meilleur modèle
-    # =========================
-
-    best_model_name = max(scores, key=scores.get)
-    best_model = candidates[best_model_name]
-    best_score = scores[best_model_name]
-    best_pred = predictions[best_model_name]
-
-    print(f"\n Best model: {best_model_name}")
-    print(f"   HIT+BOUNCE F1: {best_score:.3f}")
-
-    # =========================
-    # 5. Enrichir le JSON
+    # 3. Enrichir le JSON
     # =========================
 
     inv_label_map = {v: k for k, v in LABEL_MAP.items()}
-    df_vis["pred_action"] = [inv_label_map[p] for p in best_pred]
+    df_vis["pred_action"] = [inv_label_map[p] for p in y_pred]
 
     # réinjecter dans le JSON original
 
@@ -218,18 +167,21 @@ def supervized_hit_bounce_detection(json_path):
         on="frame",
         how="left"
     )
+
     df_all["pred_action"] = df_all["pred_action"].fillna("air")
-    df_all = df_all[['frame','x','y','visible','action','pred_action']]
+    df_all = df_all[["frame", "x", "y", "visible", "action", "pred_action"]]
+
     json_data = (
         df_all.set_index("frame")
         .to_dict(orient="index")
     )
 
     # =========================
-    # 6. Retour
+    # 4. Retour
     # =========================
 
     return json_data
+
 
 
 if __name__ =="__main__" :
@@ -245,10 +197,10 @@ if __name__ =="__main__" :
     joblib.dump(best_mlp_features, "models/best_mlp_features.pkl")
 """
     
-    json_1_unsupervised = unsupervised_hit_bounce_detection(r"ball_data_1.json")
+    """json_1_unsupervised = unsupervised_hit_bounce_detection(r"ball_data_1.json")
     json_1_supervised = supervized_hit_bounce_detection(r"ball_data_1.json")
     print("UNSUPERVISED TYPE =", type(json_1_unsupervised))
-    print("SUPERVISED TYPE =", type(json_1_supervised))
+    print("SUPERVISED TYPE =", type(json_1_supervised))"""
 
 
     """df_1_unsupervised = (pd.DataFrame.from_dict(json_1_unsupervised, orient="index")
